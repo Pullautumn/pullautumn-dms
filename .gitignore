@@ -1,0 +1,116 @@
+# 临时文件
+*.log
+*.tmp
+# 安装器进度记录
+.install_progress
+config_backup_*.tar.gz
+# 依赖目录
+node_modules/
+__pycache__/
+# 系统隐藏文件
+.DS_Store
+.idea/
+# 编译产物
+dist/
+build/
+
+
+# ==============================================================================
+# 运行时生成物
+#
+# 判据：stow 会把只含单一子目录的包折叠成一个目录软链（如 ~/.config/niri →
+# 仓库/niri/.config/niri），所以 DMS / matugen 往这些目录里写的文件会**直接落到仓库**。
+# 凡是被外部程序改写的，一律在这里忽略，否则 git status 天天脏、git pull 必冲突。
+# ==============================================================================
+
+# ------------------------------ DMS（dux-shell）------------------------------
+# niri 配置结构来自 shorin-dux-niri：dms/ 下 binds / alttab / supertab / cursor / layout
+# 都是仓库自带、随 stow 分发的初始值，**必须提交**。
+# 注意 layout.kdl 带 DMS 的「AUTO-GENERATED」头，你在 DMS 布局设置里调 gaps / 圆角
+# 时它会被重写 —— 那时 git status 会脏，这是沿用 shorin 的结构换来的代价。本仓库的
+# 处理是接受它（改完提交一次即可），而不是把整个 dms/ 都忽略掉。
+#
+# colors.kdl：DMS 换壁纸时重写
+niri/.config/niri/dms/colors.kdl
+# windowrules.kdl：DMS 的「窗口规则」面板写入项
+niri/.config/niri/dms/windowrules.kdl
+# input.kdl：DMS 的输入设置面板写入项（键鼠参数）
+niri/.config/niri/dms/input.kdl
+# outputs.kdl：DMS 的显示器面板写入项。仓库里不放这个文件（conf.d/output.kdl 兜底），
+# config.kdl 用 optional include，所以首次没有也不报错。
+niri/.config/niri/dms/outputs.kdl
+# DMS 的 kitty 配色 / 标签栏（kitty.conf 的 BEGIN_KITTY_THEME 标记块 include 它）
+kitty/.config/kitty/dank-theme.conf
+kitty/.config/kitty/dank-tabs.conf
+# DMS 写进 GTK 的主题变量。gtk-3.0 是 stow 包（折叠软链），所以必须忽略，
+# 否则 dconf/主题一换就写穿到仓库里
+gtk-3.0/.config/gtk-3.0/dank-colors.css
+gtk-3.0/.config/gtk-3.0/gtk.css
+# ~/.config/dms 是 stow 包（dms/），折叠成目录软链后 DMS 的运行时文件会直接
+# 写进仓库。这里用**白名单**：只跟踪我们要还原的三份，其余一律不入库 ——
+# 黑名单要跟着 DMS 的版本一个个补，白名单不用。
+#   settings.json      主设置（状态栏 / dock / 启动器 / 锁屏 / 空闲策略）
+#   clsettings.json    剪贴板面板策略
+#   README.md          包说明
+# 刻意排除：.firstlaunch（带上会跳过首启向导）、firefox.css（matugen 产物）、
+#          plugins/ + plugins.lock.json + plugin_settings.json（插件本体与私有数据）、
+#          themes/（第三方主题）。
+dms/.config/dms/*
+!dms/.config/dms/settings.json
+!dms/.config/dms/clsettings.json
+!dms/.config/dms/README.md
+
+# ------------------------------ matugen --------------------------------------
+btop/.config/btop/themes/matugen.theme
+fastfetch/.config/fastfetch/config.jsonc
+fuzzel/.config/fuzzel/colors.ini
+local-share-fcitx5/.local/share/fcitx5/themes/
+
+# ------------------------------ 其它应用 -------------------------------------
+# kitty.conf 是手写配置（字体/透明度/键位），仓库里没有任何程序生成它，必须提交。
+# 只有编辑器留下的 .bak 才忽略。
+kitty/.config/kitty/kitty.conf.bak
+kitty/.config/kitty/themes/
+# fcitx5 的运行期缓存，随系统 locale / 键盘布局自动生成
+fcitx5/.config/fcitx5/conf/cached_layouts
+# profile / classicui.conf / notifications.conf 属于配置本身（方案列表、主题、字体），
+# 照 shorin 的做法入库跟踪；改动它们等于改仓库，别用 fcitx5-configtool 直接调
+local-share-fcitx5/.local/share/fcitx5/rime/installation.yaml
+local-share-fcitx5/.local/share/fcitx5/rime/sync
+local-share-fcitx5/.local/share/fcitx5/rime/user.yaml
+# Rime 编译出的 *.bin / *.yaml（build/）与用户词库（*.userdb/）。
+# ~/.local/share/fcitx5 是折叠软链，这些全都会直接落进仓库。
+local-share-fcitx5/.local/share/fcitx5/rime/build/
+local-share-fcitx5/.local/share/fcitx5/rime/*.userdb/
+Thunar/.config/Thunar/accels.scm
+# mpv 的 Anime4K 着色器（几十 MB，不进仓库）。~/.config/mpv 是折叠软链，
+# 手动放进去的 shaders/ 会直接落在仓库里，所以必须忽略。
+mpv/.config/mpv/shaders/
+# 开了 save-position-on-quit 之后 mpv 在这里存每个文件的播放进度
+mpv/.config/mpv/watch_later/
+# playlistmanager 保存的播放列表
+mpv/.config/mpv/playlists/
+# GTK 书签由 setup 按当前 $HOME 生成（内容因人而异，不能提交）
+gtk-3.0/.config/gtk-3.0/bookmarks
+# zcompdump 名字带主机名和 zsh 版本，用通配才不会换机器就漏
+zsh/.config/zsh/.zcompdump*
+
+# ------------------------------ niri -----------------------------------------
+# NiriMod 写入残留的临时文件（正常情况会自己清理，被 kill 时会留下）
+niri/.config/niri/.nirimod_tmp_*
+# NiriMod 的配置快照（跟随 niri 配置目录，会落在仓库里）
+niri/.config/niri/profiles/
+niri/.config/niri/scripts/venv
+
+# ------------------------------ 壁纸 -----------------------------------------
+# wallpaper/ 不是 stow 包：`_dotfiles_link_wallpapers` 把
+# 仓库的 wallpaper/Pictures/Wallpapers 链接到 ~/Pictures/Wallpapers。
+#
+# 图片本身**不进 git**（28 张 50 MB）。理由：git 只能整仓下载，图提交进去后
+# 每个 clone 的人都要付这 50 MB，没法「只给作者」。所以除了目录说明文件，
+# 这个目录下的东西全部忽略；安装器也只对 $WALLPAPER_OWNER 才去链接/拉取。
+# 后果：DMS 的「随机下载动漫壁纸」会把图直接写进仓库 —— 正好也在忽略范围内。
+/wallpaper/Pictures/Wallpapers/*
+!/wallpaper/Pictures/Wallpapers/README.md
+
+.marscode/

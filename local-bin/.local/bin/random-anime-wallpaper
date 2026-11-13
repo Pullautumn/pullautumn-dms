@@ -1,0 +1,132 @@
+#!/bin/bash
+set -euo pipefail
+
+# =============================================================================
+# random-anime-wallpaper —— 随机下载一张壁纸并用 DMS 设为桌面
+#
+# 来源：SHORiN-KiWATA/shorin-dux-niri 的 ~/.local/bin/random-anime-wallpaper-dms，
+# 剪掉了两个本仓库不存在的钩子（matugen-update.sh / niri_set_overview_blur_dark_bg.sh）：
+# DMS 的 `wallpaper set` 自己就会 spawn matugen 重算配色，不需要外部脚本再补一刀。
+#
+# 保存位置 $HOME/Pictures/Wallpapers/api-random-download/
+#   这个目录是仓库 wallpaper/Pictures/Wallpapers 的软链目标，
+#   所以 .gitignore 里有一条 wallpaper/Pictures/Wallpapers/api-random-download/。
+#
+# 选项：
+#   -k  保留模式，不清理旧壁纸（默认只留最近 40 张）
+#   -s  静默模式，不弹通知
+#   -h  帮助
+#
+# 依赖：curl、file、notify-send（libnotify）、ImageMagick（magick 或 convert）
+# =============================================================================
+
+API_URL="https://t.alcy.cc/pc/"
+SAVE_DIR="$HOME/Pictures/Wallpapers/api-random-download"
+KEEP_COUNT=40
+ENABLE_CLEANUP=true
+SILENT_MODE=false
+
+usage() {
+    echo "用法: $(basename "$0") [-k] [-s] [-h]"
+    echo "  -k  (Keep)    保留模式：不清理旧壁纸"
+    echo "  -s  (Silent)  静默模式：不发送任何通知"
+    echo "  -h  帮助信息"
+    exit 0
+}
+
+while getopts "ksh" opt; do
+    case $opt in
+        k) ENABLE_CLEANUP=false ;;
+        s) SILENT_MODE=true ;;
+        h) usage ;;
+        *) usage ;;
+    esac
+done
+
+send_notify() {
+    if [ "$SILENT_MODE" = false ]; then
+        notify-send "$1" "$2" ${3:-}
+    fi
+}
+
+mkdir -p "$SAVE_DIR"
+TIMESTAMP=$(date +%s)
+RAW_PATH="${SAVE_DIR}/wall_${TIMESTAMP}_raw.tmp"
+FINAL_PATH="${SAVE_DIR}/wall_${TIMESTAMP}.png"
+
+# --- 1. 下载（带心跳通知，避免以为卡死）---
+if [ "$SILENT_MODE" = false ]; then
+    (
+        sleep 8
+        while true; do
+            notify-send "Wallpaper" "Downloading is still in progress..." \
+                --expire-time=5000 --icon=drive-harddisk --replace-id=999 || true
+            sleep 8
+        done
+    ) &
+    NOTIFY_PID=$!
+else
+    NOTIFY_PID=""
+fi
+
+send_notify "Wallpaper" "Downloading from Alcy..." "--expire-time=5000"
+
+USER_AGENT="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+
+if ! curl -L -s -A "$USER_AGENT" --connect-timeout 10 -m 120 -o "$RAW_PATH" "$API_URL"; then
+    [ -n "${NOTIFY_PID:-}" ] && kill "$NOTIFY_PID" 2>/dev/null || true
+    send_notify "Wallpaper Error" "Download failed (Network/API Error)"
+    exit 1
+fi
+
+if [ -n "${NOTIFY_PID:-}" ]; then
+    kill "$NOTIFY_PID" 2>/dev/null || true
+fi
+
+# --- 2. 校验 ---
+if [ ! -f "$RAW_PATH" ] || [ "$(wc -c < "$RAW_PATH")" -lt 20480 ]; then
+    send_notify "Wallpaper Error" "Download failed (File too small/Invalid)"
+    rm -f "$RAW_PATH"
+    exit 1
+fi
+
+FILE_TYPE=$(file --mime-type -b "$RAW_PATH" || echo "unknown")
+if [[ "$FILE_TYPE" != image/* ]]; then
+    send_notify "Wallpaper Error" "Not an image file ($FILE_TYPE)"
+    rm -f "$RAW_PATH"
+    exit 1
+fi
+
+# --- 3. 转成 PNG（DMS 对 PNG 最稳）---
+if command -v magick > /dev/null 2>&1; then
+    IMG_TOOL="magick"
+elif command -v convert > /dev/null 2>&1; then
+    IMG_TOOL="convert"
+else
+    send_notify "Wallpaper Error" "ImageMagick not found. Please install it."
+    rm -f "$RAW_PATH"
+    exit 1
+fi
+
+if ! $IMG_TOOL "$RAW_PATH" "$FINAL_PATH"; then
+    send_notify "Wallpaper Error" "Failed to convert image to PNG format"
+    rm -f "$RAW_PATH" "$FINAL_PATH"
+    exit 1
+fi
+
+rm -f "$RAW_PATH"
+
+# --- 4. 应用（DMS 会顺带重算 matugen 配色）---
+dms ipc call wallpaper set "$FINAL_PATH"
+
+# --- 5. 清理旧图（异步，别拖慢通知）---
+if [ "$ENABLE_CLEANUP" = true ]; then
+    (
+        cd "$SAVE_DIR" || exit 0
+        ls -t | tail -n +$((KEEP_COUNT + 1)) | while IFS= read -r old; do
+            rm -f -- "$old"
+        done
+    ) &
+fi
+
+send_notify "Wallpaper Updated" "PNG applied successfully!"

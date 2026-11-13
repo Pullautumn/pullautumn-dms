@@ -1,0 +1,32 @@
+// 带缩略图的 Alt+Tab 窗口切换（niri 原生 recent-windows）
+//
+// 配置来自 shorin-dux-niri，键位改成本项目的 Alt+Tab（shorin 原本是 Mod+Tab）。
+// pullautumn 主仓库这里用的是 fuzzel 列表（scripts/niri-quick-switch-fuzzel.py），
+// 本项目改用缩略图版；想换回 fuzzel 就删掉下面两条 binds，
+// 再在 dms/binds.kdl 里恢复 Alt+Tab -> niri-quick-switch-fuzzel.py。
+recent-windows {
+    // 取消 //off 的注释可以禁用
+    // off
+    debounce-ms 750
+    open-delay-ms 150
+
+    highlight {
+        // 缩略图背景内间距
+        padding 30
+        // 缩略图的背景圆角
+        corner-radius 12
+    }
+
+    // 设置缩略图大小
+    previews {
+        max-height 480
+        max-scale 0.2
+    }
+
+    binds {
+        // scope="workspace" 只列当前工作区的窗口；
+        // 想按 app-id 过滤（显示同一程序的所有窗口）用 filter="app-id"
+        Alt+Tab       { next-window scope="workspace"; }
+        Alt+Shift+Tab { previous-window scope="workspace"; }
+    }
+}

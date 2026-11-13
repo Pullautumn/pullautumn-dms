@@ -1,0 +1,42 @@
+// --- NIRI BLUR START ---
+// 顶层的blur配置，细节调整blur的效果
+blur {
+    passes 3
+    offset 3
+    noise 0.02
+    saturation 1.5
+}
+// 全局窗口规则。让所有普通窗口以xray的形式显示blur。xray仅渲染一次模糊版本的背景，然后将其以类似“壁纸”的形式显示在窗口后面，不是实时渲染模糊，所以完全没有性能消耗。
+window-rule {
+    background-effect {
+        xray true
+        blur true
+    }
+}
+// 浮动窗口禁用xray可以实时渲染模糊效果但是性能消耗高，开启xray会穿过浮动窗口底下的窗口直接透视到桌面。看个人喜好选择禁用与否吧。
+window-rule {
+    match is-floating=true
+    background-effect {
+        xray true
+        blur true
+    }
+}
+// fuzzel专属的layer规则
+layer-rule {
+    match namespace="^launcher$"
+    geometry-corner-radius 8
+    background-effect {
+        xray false
+	blur true
+    }
+}
+// DMS 的壁纸层（namespace 就叫 quickshell）。必须 place-within-backdrop，
+// 否则概述（overview）里 niri 只画自己的 backdrop 纯色 —— 表现为「概览没背景壁纸」。
+// 这是 DMS 官方 niri 配置里的第一条 layer-rule。shorin 那套没抄它，他靠
+// dms:blurwallpaper 模糊层铺满（规则在 shorin-windowrules.kdl，开关在 DMS 设置里）。
+layer-rule {
+    match namespace="^quickshell$"
+    place-within-backdrop true
+}
+// --- NIRI BLUR END ---
+

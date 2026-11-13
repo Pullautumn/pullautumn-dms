@@ -1,0 +1,48 @@
+# ==============================================================================
+# matugen 模板配置（pullautumn）
+#
+# 分工：DMS（dux-shell）自己会在换壁纸时跑 matugen，并生成下面这些文件 ——
+#   ~/.config/niri/dms/colors.kdl          niri 边框色
+#   ~/.config/kitty/dank-theme.conf        kitty 配色 + 标签栏
+#   ~/.config/gtk-3.0/dank-colors.css      GTK3
+#   ~/.config/gtk-4.0/dank-colors.css      GTK4
+#   ~/.config/qt5ct|qt6ct/colors/matugen.conf
+# 所以本文件只负责 DMS 不管的部分，避免两套模板抢同一个输出文件。
+# 想整体关掉 DMS 的 matugen：在 DMS 设置里关「动态配色」，或设 DMS_DISABLE_MATUGEN=1。
+#
+# 想加新模板：在 [templates.xxx] 里写 input_path / output_path 即可，
+# 但先确认 DMS 没在写同一个文件。
+# ==============================================================================
+
+[config]
+
+[templates.btop]
+input_path = '~/.config/matugen/templates/btop.theme'
+output_path = '~/.config/btop/themes/matugen.theme'
+post_hook = 'killall -SIGUSR1 btop && killall -SIGUSR2 btop &'
+
+[templates.fastfetch]
+input_path = '~/.config/matugen/templates/fastfetch-config.jsonc'
+output_path = '~/.config/fastfetch/config.jsonc'
+
+# fuzzel 只当 DMS spotlight 起不来时的兜底启动器，配色仍需自己生成
+[templates.fuzzel]
+input_path = '~/.config/matugen/templates/fuzzel.ini'
+output_path = '~/.config/fuzzel/colors.ini'
+
+[templates.gtk-folder]
+input_path = '~/.config/matugen/templates/gtk-folder/recolor.sh'
+output_path = '~/.cache/matugen/recoloricons.sh'
+post_hook = 'bash ~/.cache/matugen/recoloricons.sh &'
+
+[templates.pywalfox]
+input_path = '~/.config/matugen/templates/pywalfox-colors.json'
+output_path = '~/.cache/wal/colors.json'
+post_hook = 'pywalfox update &'
+
+# fcitx5 的皮肤：DMS 不管这块，但它的 addon 只支持「重载」不支持热替换，
+# 所以 post_hook 走 busctl 精确重载 classicui，不要用 fcitx5 -r（会拉起第二个实例）。
+[templates.fcitx5]
+input_path = '~/.config/matugen/templates/fcitx5-theme.conf'
+output_path = '~/.local/share/fcitx5/themes/Matugen/theme.conf'
+post_hook = 'busctl --user --auto-start=no call org.fcitx.Fcitx5 /controller org.fcitx.Fcitx.Controller1 ReloadAddonConfig s classicui &'

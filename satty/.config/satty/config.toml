@@ -1,0 +1,29 @@
+# satty —— 截图标注工具（GTK4）
+#
+# 由 `Alt+Ctrl+S` 调用：选区截图后直接管道送进 satty（`grim -g ... - | satty -f -`），
+# 编辑完右键存回剪贴板，或 Ctrl+S 另存文件。
+#
+# 配置来自 shorin-dux-niri，只做两处规范化：空格写法统一、fallback 列表补尾逗号。
+
+[general]
+# 复制（Ctrl+C）走 wl-copy，Wayland 下唯一可用的剪贴板写入方式
+copy-command = "wl-copy"
+# 全屏铺满时工具栏跟随显隐，避免挡住标注区域
+focus-toggles-toolbars = true
+# 打开就是画笔，不用每次点一次工具按钮
+initial-tool = "brush"
+# 初始缩放 1.1 倍，看小字更清楚
+zoom-factor = 1.1
+# 右键直接存剪贴板，省一次 Ctrl+C
+actions-on-right-click = ["save-to-clipboard"]
+
+[font]
+family = "Noto Sans"
+style = "Regular"
+# 中文标注必须靠 fallback，Noto Sans 本体没有汉字
+fallback = [
+    "Noto Sans CJK SC",
+    "Noto Sans CJK JP",
+    "Noto Sans CJK TC",
+    "Noto Sans CJK KR",
+]

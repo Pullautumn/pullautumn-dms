@@ -1,0 +1,64 @@
+// ==============================================================================
+// niri 主配置 —— shorin-dux-niri 的结构 + pullautumn 的键位
+// ==============================================================================
+//
+// 结构来源：SHORiN-KiWATA/shorin-dux-niri（AUR: shorin-dux-niri-git）
+//   layout.kdl / animations.kdl / blur.kdl / shorin-windowrules.kdl / dms/*.kdl
+//   全部原样搬过来，所以视觉与交互（圆角、gaps、模糊、动画、窗口规则、supertab）
+//   跟 shorin 一致。
+//
+// 与 shorin 的差异只有两处：
+//   1. 键位用 pullautumn 的（dms/binds.kdl 整套重写，见该文件头部对照表）
+//   2. 硬件相关配置留在 conf.d/ 下（显示器 / 键盘布局 / 环境变量 / 自启），
+//      这些是机器相关的，shorin 的默认值换台机器就是错的
+//
+// include 顺序 = 生效顺序（后 include 的同名属性覆盖先前的），所以：
+//   conf.d（我们的硬件值） → layout/animations → window-rule → dms/*（DMS 接管）
+// ==============================================================================
+
+// ---------- 机器相关：显示器 / 输入 / 环境变量 / 启动项 ----------
+include "conf.d/output.kdl"
+include "conf.d/input.kdl"
+include "conf.d/environment.kdl"
+include "conf.d/autostart.kdl"
+
+// ---------- 布局与动画（shorin）----------
+include "layout.kdl"
+include "animations.kdl"
+
+// 隐藏窗口标题栏（shorin 与 pullautumn 都开）
+prefer-no-csd
+
+// 关闭启动时的「重要快捷键」弹窗 —— 写在 conf.d/autostart.kdl 里，
+// 同一个 hotkey-overlay 块不重复定义。
+
+// 放宽聚焦拦截，修复点击托盘程序无法跳转聚焦的问题（shorin）
+debug {
+    honor-xdg-activation-with-invalid-serial
+}
+
+// ---------- 窗口规则（shorin）----------
+// shorin-windowrules.kdl 里有全局圆角 8 + clip-to-geometry，
+// 以及 DMS 设置窗、imv、steam、satty、quickterminal 等浮动规则。
+include "shorin-windowrules.kdl"
+
+// ---------- DMS 模块 ----------
+// 键位：本仓库自己维护（dms setup 遇到已存在的非空文件会拒绝覆盖）
+include "dms/binds.kdl"
+// 缩略图切换：alttab（DMS 生成的 highlight 圆角）+ supertab（Alt+Tab 键位）
+include "dms/alttab.kdl"
+include "dms/supertab.kdl"
+// 光标
+include "dms/cursor.kdl"
+// DMS 的输入设置面板写入项；没有就跳过（DMS 面板调过的键鼠参数落在这里）
+include optional=true "dms/input.kdl"
+// DMS 的显示器面板写入项；空文件时不影响 conf.d/output.kdl
+include optional=true "dms/outputs.kdl"
+// DMS 的窗口规则面板写入项
+include optional=true "dms/windowrules.kdl"
+// 配色最后加载：DMS 换壁纸时重写它（进 .gitignore，不随仓库分发）
+include optional=true "dms/colors.kdl"
+
+// ---------- 模糊（shorin）----------
+// 全局 xray 模糊 + fuzzel 的 layer 规则；不想要就把这行注释掉
+include "blur.kdl"

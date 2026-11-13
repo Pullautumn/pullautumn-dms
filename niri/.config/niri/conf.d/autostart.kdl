@@ -1,0 +1,50 @@
+// 启动程序配置（DMS 桌面）
+//
+// 与 pullautumn 主仓库的差异：状态栏 / 通知 / 锁屏 / 剪贴板 / 启动器 / 电源菜单 /
+// 空闲抑制 / OSD / 壁纸全部由 DMS 一个进程接管，这里不再 spawn
+// waybar、swaync、swayidle、swayosd-server、awww-daemon、mako、wlogout。
+
+// 加载 XWayland DPI，解决 xwayland 下 fcitx5 界面太小
+spawn-sh-at-startup "echo 'Xft.dpi: 144' | xrdb -merge"
+
+// DMS 桌面壳。
+// 故意不用 `systemctl --user start dms.service`：那个单元有
+// Requisite=graphical-session.target，而用 greetd/niri 直接起会话时该 target
+// 不一定已经被拉起，start 会直接失败。直接 spawn 与上游 shorindms 的做法一致。
+spawn-at-startup "dms" "run"
+
+// DMS 的文件搜索后端（包 dux-search 提供 dsearch；缺了只是搜索变慢，不阻塞）
+spawn-at-startup "dsearch" "serve"
+
+// 询问管理员权限（polkit 认证代理）
+spawn-at-startup "/usr/lib/polkit-gnome/polkit-gnome-authentication-agent-1"
+
+// 屏幕分享 / 录屏的环境变量，投屏异常时可以打开看看
+spawn-sh-at-startup "dbus-update-activation-environment --systemd WAYLAND_DISPLAY XDG_CURRENT_DESKTOP=niri & /usr/lib/xdg-desktop-portal-gnome"
+
+// GNOME tracker 修复（部分 GTK 程序的最近文件功能需要它）
+spawn-sh-at-startup "systemctl --user set-environment XDG_SESSION_CLASS=user"
+
+// 允许 root 通过当前用户的 XWayland 打开窗口（sudo nautilus / gparted 之类的落点）
+spawn-at-startup "xhost" "+si:localuser:root"
+
+// 输入法。
+// 这里必须 spawn：niri 不会自己执行 /etc/xdg/autostart 里的 .desktop，
+// 想靠 XDG autostart 拉起 fcitx5 得额外启用 xdg-autostart-generator。
+spawn-at-startup "fcitx5"
+
+// 剪贴板历史：text / image 分成两条 watch。
+// 只留这一行拆分版本 —— 两条都开会让每次复制在 cliphist 里存 3 份。
+spawn-sh-at-startup "wl-paste --type text --watch cliphist store & wl-paste --type image --watch cliphist store & wait"
+
+// 截图音效守护。
+// 截图键位截图后给它发 SIGUSR1「上膛」，它靠自己的 wl-paste --watch 确认图片
+// 真的进了剪贴板才播快门声 —— 这样手动复制的图片不会误响。
+// 必须常驻：niri 的 spawn-at-startup 走独立 scope，niri 重启不会带走旧实例，
+// 脚本内部用 flock 单例锁兜底；wl-paste 断连时它会自己退出。
+spawn-at-startup "~/.config/niri/scripts/screenshot-sound.sh"
+
+// 取消启动 niri 时自动弹快捷键教程
+hotkey-overlay {
+    skip-at-startup
+}

@@ -1,0 +1,255 @@
+// ==============================================================================
+// niri 快捷键 —— 键位表来自 pullautumn，执行命令换成 DMS 的 IPC
+// ==============================================================================
+
+// ==============================================================================
+binds {
+    // ---------- 快捷键教程 ----------
+    Mod+Alt+Slash hotkey-overlay-title="快捷键教程 Keybind tutorial" { spawn "~/.config/niri/scripts/niri-binds"; }
+
+    // ---------- 面板 / 通知 / 启动器 ----------
+    // 通知栏
+    Mod+N hotkey-overlay-title="通知栏" repeat=false { spawn "dms" "ipc" "call" "notifications" "toggle"; }
+    // 应用启动器：DMS 的 spotlight；shell 没起来（IPC 失败）时退回 fuzzel
+    Mod+A hotkey-overlay-title="应用启动器" repeat=false { spawn-sh "dms ipc call spotlight toggle || fuzzel"; }
+    // 剪贴板。pullautumn 里 Mod+V 是 cliphist-tui、Mod+Shift+V 是 waybar 面板；
+    // DMS 只有一个剪贴板面板，统一到 Mod+V。Mod+Shift+V 在本项目里不绑定（别按老习惯去按）。
+    Mod+V       hotkey-overlay-title="剪贴板 Clipboard" repeat=false { spawn "dms" "ipc" "call" "clipboard" "toggle"; }
+
+    // ---------- F 功能键 ----------
+    Mod+F1 hotkey-overlay-title="开关输入法 Toggle fcitx" { spawn-sh "pkill fcitx5 || fcitx5"; }
+    Mod+F2 hotkey-overlay-title="设置 Settings" { spawn "dms" "ipc" "call" "settings" "focusOrToggle"; }
+    Mod+F3 hotkey-overlay-title="录屏 Screen record" { spawn "shorin-screenrec-menu";}
+    Mod+Shift+F4 hotkey-overlay-title="隐藏面板 Hide bar" { spawn "dms" "ipc" "call" "bar" "toggle" "id" "default"; }
+    Mod+F5 hotkey-overlay-title="快速存档 Quick save" { spawn "quicksave"; }
+    Mod+F8 hotkey-overlay-title="快速读档 Quick load" { spawn "quickload"; }
+
+    // ---------- 壁纸 ----------
+    Mod+Alt+W hotkey-overlay-title="切换壁纸 Change wallpaper" { spawn "dms" "ipc" "call" "dash" "toggle" "wallpaper"; }
+    Mod+F10 hotkey-overlay-title="随机切换壁纸 Random wallpaper" { spawn "dms" "ipc" "call" "wallpaper" "next"; }
+    Mod+Shift+F10 hotkey-overlay-title="随机下载动漫壁纸 Random download anime wallpaper" { spawn "~/.local/bin/random-anime-wallpaper"; }
+    // 还原仓库默认配色（btop / fastfetch / fuzzel / fcitx5 / 图标），全程 notify-send 报进度，
+    // 耗时 20-60 秒。repeat=false 防连按：脚本会 pkill recoloricons.sh 并删图标目录，
+    // 两个实例同时跑会互相打架。路径必须由 sh 展开 —— niri 的 spawn 不经 shell，写 ~ 不生效。
+    Mod+F12 repeat=false hotkey-overlay-title="还原默认配色" { spawn-sh "$HOME/.config/scripts/matugen-restore.sh"; }
+
+    // ---------- niri-sidebar（实验性）----------
+    Mod+Alt+S hotkey-overlay-title="收起窗口 Move to Sidebar" { spawn "niri-sidebar" "toggle-window"; }
+    Mod+M     hotkey-overlay-title="收起窗口 Move to Sidebar" { spawn "niri-sidebar" "toggle-window"; }
+    Mod+Ctrl+M hotkey-overlay-title="切换浮动聚焦 Change focus to floating" { switch-focus-between-floating-and-tiling; }
+    Mod+Alt+Z hotkey-overlay-title="展开/收起侧边栏 Toggle Sidebar" { spawn "niri-sidebar" "toggle-visibility"; }
+    Mod+Alt+X hotkey-overlay-title=null { spawn "niri-sidebar" "flip"; }
+    Mod+Alt+R hotkey-overlay-title="重置侧边栏 Reorder Sidebar" { spawn "niri-sidebar" "reorder"; }
+
+    // ---------- 终端 / 常用程序 ----------
+    Mod+T hotkey-overlay-title="共享终端 Terminal" { spawn "kitty" "--single-instance"; }
+    Mod+return hotkey-overlay-title="独立终端 Terminal" { spawn "kitty"; }
+    // 临时终端：用 --class 而不是 pullautumn 的 --title，
+    // 因为 shorin-windowrules.kdl 是按 app-id="quickterminal" 匹配浮动位置的
+    Mod+Slash hotkey-overlay-title="临时终端 Quick Terminal" { spawn "kitty" "--single-instance" "--class" "quickterminal"; }
+    Mod+Y     hotkey-overlay-title="yazi" { spawn "kitty" "--class" "Yazi" "--" "yazi"; }
+    Mod+E     hotkey-overlay-title="文件管理器(nautilus)" { spawn-sh "XDG_CURRENT_DESKTOP=GNOME nautilus --new-window || thunar --new-window"; }
+    Mod+Alt+E hotkey-overlay-title="文件管理器(thunar)" { spawn-sh "thunar"; }
+    Mod+B     hotkey-overlay-title="浏览器" { spawn "google-chrome-stable"; }
+
+    // ---------- 锁屏 / 会话 ----------
+    // DMS 锁屏。logind 兜底留给 shell 没起来的情况；
+    // DMS 设置里 loginctlLockIntegration 默认开，两种入口是同一套锁屏。
+    Mod+Alt+L hotkey-overlay-title="锁屏" { spawn-sh "dms ipc call lock lock || loginctl lock-session"; }
+    // 锁屏、关闭显示器、休眠。
+    // 键位是 Mod+Ctrl+Alt+L，跟锁屏（Mod+Alt+L）同一条 L 轴、多一级 Ctrl。
+    // 不能写 Mod+Ctrl+L —— 那是 move-column-right，重复键位会让整份 binds.kdl
+    // 解析失败，niri 于是静默沿用上一次的成功配置（表现为改了没生效）。
+    Mod+Ctrl+Alt+L hotkey-overlay-title="挂起 Suspend" { spawn-sh "niri msg action power-off-monitors && dms ipc call lock lock && systemctl suspend"; }
+    Ctrl+Alt+Delete hotkey-overlay-title="电源菜单 Powermenu" { spawn "dms" "ipc" "call" "powermenu" "toggle"; }
+    Mod+Shift+E hotkey-overlay-title="退出桌面" { quit; }
+    Mod+Ctrl+Shift+Alt+R hotkey-overlay-title="重载配置" {
+        spawn "bash" "-c" "niri msg action load-config-file && notify-send '✅ Niri' '配置已重载'";
+    }
+
+    // ---------- 音量 / 亮度 / 播放 ----------
+    XF86AudioRaiseVolume allow-when-locked=true { spawn "dms" "ipc" "call" "audio" "increment" "5"; }
+    XF86AudioLowerVolume allow-when-locked=true { spawn "dms" "ipc" "call" "audio" "decrement" "5"; }
+    XF86AudioMute        allow-when-locked=true { spawn "dms" "ipc" "call" "audio" "mute"; }
+    XF86AudioMicMute     allow-when-locked=true { spawn "dms" "ipc" "call" "mic" "mute"; }
+    XF86AudioPlay        allow-when-locked=true { spawn "dms" "ipc" "call" "mpris" "playPause"; }
+    XF86AudioPause       allow-when-locked=true { spawn "dms" "ipc" "call" "mpris" "playPause"; }
+    XF86AudioPrev        allow-when-locked=true { spawn "dms" "ipc" "call" "mpris" "previous"; }
+    XF86AudioNext        allow-when-locked=true { spawn "dms" "ipc" "call" "mpris" "next"; }
+    XF86MonBrightnessUp   allow-when-locked=true { spawn "dms" "ipc" "call" "brightness" "increment" "5" ""; }
+    XF86MonBrightnessDown allow-when-locked=true { spawn "dms" "ipc" "call" "brightness" "decrement" "5" ""; }
+
+    // ---------- 总览 / 窗口 ----------
+    Mod+O hotkey-overlay-title="预览模式" repeat=false { toggle-overview; }
+    Mod+G hotkey-overlay-title="预览模式" repeat=false { toggle-overview; }
+    Mod+Q    hotkey-overlay-title="关闭窗口" { close-window; }
+    Alt+F4   hotkey-overlay-title="关闭窗口" repeat=false { close-window; }
+
+    // 切换到第一个 / 最后一个 column
+    Mod+Home { focus-column-first; }
+    Mod+End  { focus-column-last; }
+    Mod+Ctrl+Home { move-column-to-first; }
+    Mod+Ctrl+End  { move-column-to-last; }
+
+    // ==============================切换聚焦==============================
+    Mod+Left  hotkey-overlay-title="向左切换窗口" { focus-column-left; }
+    Mod+Down  hotkey-overlay-title="向下切换窗口" { focus-window-down; }
+    Mod+Up    hotkey-overlay-title="向上切换窗口" { focus-window-up; }
+    Mod+Right hotkey-overlay-title="向右切换窗口" { focus-column-right; }
+    Mod+H { focus-column-left; }
+    Mod+J { focus-window-down; }
+    Mod+K { focus-window-up; }
+    Mod+L { focus-column-right; }
+    Mod+WheelScrollUp   hotkey-overlay-title="向左切换窗口" { focus-column-left; }
+    Mod+WheelScrollDown hotkey-overlay-title="向右切换窗口" { focus-column-right; }
+
+    // ==============================移动 column==============================
+    Mod+Ctrl+Left  hotkey-overlay-title="将窗口向左移动" { move-column-left; }
+    Mod+Ctrl+Down  hotkey-overlay-title="将窗口向下移动" { move-window-down; }
+    Mod+Ctrl+Up    hotkey-overlay-title="将窗口向上移动" { move-window-up; }
+    Mod+Ctrl+Right hotkey-overlay-title="将窗口向右移动" { move-column-right; }
+    Mod+Ctrl+H { move-column-left; }
+    Mod+Ctrl+J { move-window-down; }
+    Mod+Ctrl+K { move-window-up; }
+    Mod+Ctrl+L { move-column-right; }
+    Mod+Ctrl+WheelScrollUp   hotkey-overlay-title="将窗口向左移动" { move-column-left; }
+    Mod+Ctrl+WheelScrollDown hotkey-overlay-title="将窗口向右移动" { move-column-right; }
+
+    // ==============================切换工作区==============================
+    Mod+Page_Down hotkey-overlay-title="向下切换工作区" { focus-workspace-down; }
+    Mod+Page_Up   hotkey-overlay-title="向上切换工作区" { focus-workspace-up; }
+    Mod+Alt+Down  hotkey-overlay-title="向下切换工作区" { focus-workspace-down; }
+    Mod+Alt+Up    hotkey-overlay-title="向上切换工作区" { focus-workspace-up; }
+    Mod+U         { focus-workspace-down; }
+    Mod+I         { focus-workspace-up; }
+    Mod+Alt+WheelScrollDown hotkey-overlay-title="向下切换工作区" { focus-workspace-down; }
+    Mod+Alt+WheelScrollUp   hotkey-overlay-title="向上切换工作区" { focus-workspace-up; }
+
+    // ==============================移动窗口到其他工作区==============================
+    Mod+Ctrl+Page_Down hotkey-overlay-title="将窗口移动到下面工作区" { move-column-to-workspace-down; }
+    Mod+Ctrl+Page_Up   hotkey-overlay-title="将窗口移动到上面工作区" { move-column-to-workspace-up; }
+    Mod+Ctrl+Alt+Down  hotkey-overlay-title="将窗口移动到下面工作区" { move-column-to-workspace-down; }
+    Mod+Ctrl+Alt+Up    hotkey-overlay-title="将窗口移动到上面工作区" { move-column-to-workspace-up; }
+    Mod+Ctrl+U         { move-column-to-workspace-down; }
+    Mod+Ctrl+I         { move-column-to-workspace-up; }
+    Mod+Ctrl+Alt+WheelScrollDown hotkey-overlay-title="将窗口移动到下面工作区" { move-column-to-workspace-down; }
+    Mod+Ctrl+Alt+WheelScrollUp   hotkey-overlay-title="将窗口移动到上面工作区" { move-column-to-workspace-up; }
+
+    // ==============================切换显示器聚焦==============================
+    Mod+Shift+Left  hotkey-overlay-title="将聚焦切换到左边显示器" { focus-monitor-left; }
+    Mod+Shift+Down  hotkey-overlay-title="将聚焦切换到下边显示器" { focus-monitor-down; }
+    Mod+Shift+Up    hotkey-overlay-title="将聚焦切换到上边显示器" { focus-monitor-up; }
+    Mod+Shift+Right hotkey-overlay-title="将聚焦切换到右边显示器" { focus-monitor-right; }
+    Mod+Shift+H { focus-monitor-left; }
+    Mod+Shift+J { focus-monitor-down; }
+    Mod+Shift+K { focus-monitor-up; }
+    Mod+Shift+L { focus-monitor-right; }
+
+    // ==============================移动窗口到其他显示器==============================
+    Mod+Shift+Ctrl+Left  hotkey-overlay-title="将窗口移动到左边显示器" { move-column-to-monitor-left; }
+    Mod+Shift+Ctrl+Down  hotkey-overlay-title="将窗口移动到下边显示器" { move-column-to-monitor-down; }
+    Mod+Shift+Ctrl+Up    hotkey-overlay-title="将窗口移动到上边显示器" { move-column-to-monitor-up; }
+    Mod+Shift+Ctrl+Right hotkey-overlay-title="将窗口移动到右边显示器" { move-column-to-monitor-right; }
+    Mod+Shift+Ctrl+H { move-column-to-monitor-left; }
+    Mod+Shift+Ctrl+J { move-column-to-monitor-down; }
+    Mod+Shift+Ctrl+K { move-column-to-monitor-up; }
+    Mod+Shift+Ctrl+L { move-column-to-monitor-right; }
+
+    // ==============================移动工作区到其他显示器==============================
+    Mod+Shift+Alt+W { move-workspace-to-monitor-up; }
+    Mod+Shift+Alt+S { move-workspace-to-monitor-down; }
+    Mod+Shift+Alt+D { move-workspace-to-monitor-right; }
+    Mod+Shift+Alt+A { move-workspace-to-monitor-left; }
+    Mod+Shift+Alt+K { move-workspace-to-monitor-up; }
+    Mod+Shift+Alt+J { move-workspace-to-monitor-down; }
+    Mod+Shift+Alt+L { move-workspace-to-monitor-right; }
+    Mod+Shift+Alt+H { move-workspace-to-monitor-left; }
+    Mod+Shift+Alt+Up    { move-workspace-to-monitor-up; }
+    Mod+Shift+Alt+Down  { move-workspace-to-monitor-down; }
+    Mod+Shift+Alt+Right { move-workspace-to-monitor-right; }
+    Mod+Shift+Alt+Left  { move-workspace-to-monitor-left; }
+
+    // ==============================移动整个工作区==============================
+    Mod+Shift+Page_Down hotkey-overlay-title="向下移动整个工作区" { move-workspace-down; }
+    Mod+Shift+Page_Up   hotkey-overlay-title="向上移动整个工作区" { move-workspace-up; }
+    Mod+Shift+U         hotkey-overlay-title="向下移动整个工作区" { move-workspace-down; }
+    Mod+Shift+I         hotkey-overlay-title="向上移动整个工作区" { move-workspace-up; }
+
+    // ---------- 数字工作区 ----------
+    Mod+1 { focus-workspace 1; }
+    Mod+2 { focus-workspace 2; }
+    Mod+3 { focus-workspace 3; }
+    Mod+4 { focus-workspace 4; }
+    Mod+5 { focus-workspace 5; }
+    Mod+6 { focus-workspace 6; }
+    Mod+7 { focus-workspace 7; }
+    Mod+8 { focus-workspace 8; }
+    Mod+9 { focus-workspace 9; }
+    Mod+Ctrl+1 { move-column-to-workspace 1; }
+    Mod+Ctrl+2 { move-column-to-workspace 2; }
+    Mod+Ctrl+3 { move-column-to-workspace 3; }
+    Mod+Ctrl+4 { move-column-to-workspace 4; }
+    Mod+Ctrl+5 { move-column-to-workspace 5; }
+    Mod+Ctrl+6 { move-column-to-workspace 6; }
+    Mod+Ctrl+7 { move-column-to-workspace 7; }
+    Mod+Ctrl+8 { move-column-to-workspace 8; }
+    Mod+Ctrl+9 { move-column-to-workspace 9; }
+
+    // ---------- 窗口排列 ----------
+    Mod+BracketLeft  { consume-or-expel-window-left; }
+    Mod+BracketRight { consume-or-expel-window-right; }
+    Mod+Shift+X { toggle-column-tabbed-display; }
+    Mod+X       { toggle-column-tabbed-display; }
+    Mod+Comma   { consume-window-into-column; }
+    Mod+Period  { expel-window-from-column; }
+
+    Mod+R        hotkey-overlay-title="按预设切换宽度 Switch width" { switch-preset-column-width; }
+    Mod+Shift+R  { switch-preset-window-height; }
+    Mod+Ctrl+R   { reset-window-height; }
+
+    Mod+F       hotkey-overlay-title="当前窗口最大化" { maximize-column; }
+    Mod+Shift+F hotkey-overlay-title="当前窗口全屏" { fullscreen-window; }
+    Mod+Ctrl+F  { expand-column-to-available-width; }
+
+    Mod+Minus       { set-column-width "-10%"; }
+    Mod+Equal       { set-column-width "+10%"; }
+    Mod+Shift+Minus { set-window-height "-10%"; }
+    Mod+Shift+Equal { set-window-height "+10%"; }
+
+    // 切换浮动模式（pullautumn 用 Mod+Space；shorin 是 Mod+V）
+    Mod+Space     hotkey-overlay-title="当前窗口浮动" { toggle-window-floating; }
+    Mod+Alt+Space hotkey-overlay-title="切换浮动聚焦 Change focus to floating" { switch-focus-between-floating-and-tiling; }
+    Mod+C         hotkey-overlay-title="切换窗口居中" { center-column; }
+
+    // ---------- 截图 ----------
+    // niri 的 keybind **只能挂一个 action**：`{ screenshot; spawn-sh "..." }` 这种写法
+    // 会直接报 "only one action is allowed per keybind"，整份配置加载失败。
+    // 所以截图 + 音效必须合并进同一个 spawn-sh —— 用 `niri msg action` 触发原生的
+    // 选区 UI（行为与内置动作完全一致），后面紧跟 pkill 给音效守护上膛。
+    //
+    // pkill 的 pattern 用 $ 锚定到行尾：不加锚点的话，这条命令行本身也含
+    // screenshot-sound 字样，会把执行它的父 shell 一起打中。
+    Print       hotkey-overlay-title="选区截图 Select area" { spawn-sh "niri msg action screenshot && pkill -USR1 -f 'niri/scripts/screenshot-sound\\.sh$' || true"; }
+    Alt+Print  hotkey-overlay-title="截取当前显示器 Monitor" { spawn-sh "niri msg action screenshot-screen && pkill -USR1 -f 'niri/scripts/screenshot-sound\\.sh$' || true"; }
+    Ctrl+Print   hotkey-overlay-title="截取当前窗口 Window" { spawn-sh "niri msg action screenshot-window && pkill -USR1 -f 'niri/scripts/screenshot-sound\\.sh$' || true"; }
+    Mod+P       hotkey-overlay-title="选区截图 Select area" { spawn-sh "niri msg action screenshot && pkill -USR1 -f 'niri/scripts/screenshot-sound\\.sh$' || true"; }
+    Mod+Alt+P   hotkey-overlay-title="截取当前显示器 Monitor" { spawn-sh "niri msg action screenshot-screen && pkill -USR1 -f 'niri/scripts/screenshot-sound\\.sh$' || true"; }
+    Mod+Ctrl+P  hotkey-overlay-title="截取当前窗口 Window" { spawn-sh "niri msg action screenshot-window && pkill -USR1 -f 'niri/scripts/screenshot-sound\\.sh$' || true"; }
+    Mod+Shift+P hotkey-overlay-title="mark-shot 选区标注" { spawn "mark-shot"; }
+    Mod+Shift+S  hotkey-overlay-title="截图后按下此键进行编辑 Edit the image after screenshot" { spawn-sh "wl-paste | satty -f -";}
+    // 选区截图直接进 satty 标注（右键存剪贴板，Ctrl+S 存文件）。
+    // 先落临时文件再解冻，否则 satty 的窗口会被 wayfreeze 的冻结层盖住。
+    Alt+Ctrl+S hotkey-overlay-title="截图标注 Annotate screenshot" { spawn-sh "TMP=$(mktemp --suffix=.png /tmp/satty-XXXXXX); wayfreeze & PID=$!; sleep 0.1; G=$(slurp); [ -n \"$G\" ] && grim -g \"$G\" \"$TMP\"; kill $PID; [ -s \"$TMP\" ] && satty -f \"$TMP\"; rm -f \"$TMP\""; }
+
+    // ---------- 录屏 ----------
+    // shorin-screenrec-menu：fuzzel 菜单 + 区域高亮框，
+    // 后端按 gpu-screen-recorder → wl-screenrec → wf-recorder 自动降级，
+    // 启动失败就换下一个。录好的文件在 ~/Videos/shorin-screenrec-menu/。
+    // 再按一次同一个键 = 停止录制。
+    // 用 spawn-sh 而不是 spawn：niri 的 spawn 不经 shell，脚本报错/找不到二进制
+    // 只进 journal，键位「按了没反应」但一点线索都没有。走 sh 把 stdout+stderr 加
+    // 退出码一起落到 /tmp/shorin-screenrec.log（每次按 F6 覆盖），排查 cat 一下即可。
+    // 退出码含义：0 = 已在录 / 正常；130 = 菜单被取消或没有可用的菜单后端；
+    //             1 = 找不到录屏引擎或缺 slurp/ffmpeg。
+    Mod+F6 hotkey-overlay-title="录屏 Screen record" { spawn-sh "shorin-screenrec-menu >/tmp/shorin-screenrec.log 2>&1; echo \"[exit=$?]\" >>/tmp/shorin-screenrec.log"; }
+}
